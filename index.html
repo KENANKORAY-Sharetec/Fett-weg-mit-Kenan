@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mein Ernährungs- & Trainingsplan</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f5f3ef;--bg2:#ffffff;--bg3:#eeece8;
+    --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);
+    --text:#1a1916;--text2:#6b6860;--text3:#9e9b94;
+    --green:#4ade80;--green-dim:#166534;
+    --amber:#fbbf24;--amber-dim:#78350f;
+    --coral:#fb7185;--coral-dim:#881337;
+    --blue:#60a5fa;--blue-dim:#1e3a5f;
+    --teal:#2dd4bf;--teal-dim:#134e4a;
+    --accent:#5a9e1a;--r:12px;--r2:18px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.65;min-height:100vh;}
+
+  /* SETUP OVERLAY */
+  #setup-overlay{
+    position:fixed;inset:0;z-index:999;background:var(--bg);
+    display:flex;align-items:center;justify-content:center;padding:2rem;
+    overflow-y:auto;
+  }
+  .setup-box{
+    background:var(--bg2);border:1px solid var(--border2);
+    border-radius:24px;padding:2.5rem;max-width:560px;width:100%;
+  }
+  .setup-box h1{font-family:'DM Serif Display',serif;font-size:2rem;margin-bottom:.4rem;}
+  .setup-box p{color:var(--text2);font-size:14px;margin-bottom:2rem;}
+  .setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem;}
+  .setup-field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:6px;}
+  .setup-field input,.setup-field select{
+    width:100%;background:var(--bg3);border:1px solid var(--border2);
+    border-radius:10px;padding:10px 14px;color:var(--text);
+    font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:border-color .2s;
+  }
+  .setup-field input:focus,.setup-field select:focus{border-color:var(--accent);}
+  .setup-field select option{background:#242420;}
+  .setup-hint{
+    background:var(--bg3);border-radius:var(--r);padding:12px 16px;
+    font-size:13px;color:var(--text2);margin-bottom:1.5rem;line-height:1.7;
+    min-height:48px;
+  }
+  .setup-hint strong{color:var(--text);}
+  #setup-preview{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem;}
+  .sp-card{background:var(--bg3);border-radius:var(--r);padding:10px;text-align:center;}
+  .sp-val{font-size:1.2rem;font-weight:600;}
+  .sp-lbl{font-size:11px;color:var(--text3);margin-top:2px;}
+  .btn-start{
+    width:100%;padding:14px;border-radius:12px;border:none;
+    background:var(--accent);color:#ffffff;font-family:'DM Sans',sans-serif;
+    font-size:15px;font-weight:600;cursor:pointer;transition:opacity .2s;
+  }
+  .btn-start:hover{opacity:.9;}
+  .btn-start:disabled{opacity:.35;cursor:not-allowed;}
+  .btn-edit{
+    position:fixed;bottom:1.5rem;right:1.5rem;z-index:200;
+    background:var(--bg2);border:1px solid var(--border2);color:var(--text2);
+    border-radius:50px;padding:8px 18px;font-family:'DM Sans',sans-serif;
+    font-size:13px;cursor:pointer;transition:all .2s;
+  }
+  .btn-edit:hover{color:var(--text);border-color:var(--accent);}
+
+  /* NAV */
+  nav{
+    position:sticky;top:0;z-index:100;
+    background:rgba(245,243,239,.92);backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 2rem;height:60px;
+  }
+  .nav-logo{font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--accent);}
+  .nav-links{display:flex;gap:6px;}
+  .nav-link{
+    padding:6px 14px;border-radius:20px;border:none;background:transparent;
+    color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;
+  }
+  .nav-link:hover,.nav-link.active{background:var(--bg3);color:var(--text);}
+
+  /* HERO */
+  .hero{padding:5rem 2rem 4rem;max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;}
+  .hero-title{font-family:'DM Serif Display',serif;font-size:clamp(2.2rem,5vw,3.8rem);line-height:1.1;}
+  .hero-title em{font-style:italic;color:var(--accent);}
+  .hero-sub{margin-top:1rem;color:var(--text2);font-size:1rem;max-width:400px;line-height:1.7;}
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1.25rem 1.5rem;}
+  .stat-val{font-size:2rem;font-weight:600;line-height:1;}
+  .stat-lbl{font-size:12px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:.08em;}
+  .stat-sub{font-size:12px;color:var(--text2);margin-top:2px;}
+
+  /* MACRO RING */
+  .macro-overview{max-width:1100px;margin:0 auto 3rem;padding:0 2rem;display:grid;grid-template-columns:auto 1fr;gap:3rem;align-items:center;}
+  .ring-wrap{position:relative;width:180px;height:180px;flex-shrink:0;}
+  .ring-wrap svg{width:180px;height:180px;transform:rotate(-90deg);}
+  .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring-center .rc-val{font-size:1.6rem;font-weight:600;}
+  .ring-center .rc-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+  .macro-list{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .macro-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1.25rem;}
+  .mi-dot{width:10px;height:10px;border-radius:50%;margin-bottom:10px;}
+  .mi-val{font-size:1.8rem;font-weight:600;}
+  .mi-lbl{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+  .mi-sub{font-size:12px;color:var(--text2);margin-top:2px;}
+  .prog-bar-wrap{margin-bottom:10px;}
+  .prog-label-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:4px;}
+  .prog-track{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+  .prog-fill{height:100%;border-radius:3px;transition:width .5s ease;}
+
+  /* SECTIONS */
+  .section{max-width:1100px;margin:0 auto;padding:0 2rem 4rem;}
+  .section-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-weight:600;margin-bottom:.5rem;}
+  .section-title{font-family:'DM Serif Display',serif;font-size:2rem;margin-bottom:2rem;}
+  .divider{max-width:1100px;margin:0 auto 3rem;padding:0 2rem;border-top:1px solid var(--border);}
+
+  /* MEAL PLAN */
+  .day-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2rem;}
+  .day-tab{padding:8px 18px;border-radius:24px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:all .18s;font-family:'DM Sans',sans-serif;}
+  .day-tab:hover{border-color:var(--border2);color:var(--text);}
+  .day-tab.active{background:var(--accent);color:#ffffff;border-color:transparent;}
+  .meal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .meal-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1.25rem;display:flex;flex-direction:column;animation:fadeUp .35s ease both;}
+  .meal-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+  .meal-slot{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);font-weight:600;}
+  .meal-kcal-badge{background:var(--bg3);font-size:11px;color:var(--text2);padding:2px 8px;border-radius:10px;}
+  .meal-title{font-size:14px;font-weight:600;line-height:1.3;margin:6px 0;}
+  .meal-items{font-size:12.5px;color:var(--text2);line-height:1.7;flex:1;}
+  .ing-list{flex:1;margin-top:8px;display:flex;flex-direction:column;gap:2px;}
+  .ing-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border);}
+  .ing-row:last-child{border-bottom:none;}
+  .ing-name{color:var(--text2);flex:1;padding-right:8px;line-height:1.4;}
+  .ing-gram{font-weight:600;color:var(--text);white-space:nowrap;font-size:13px;background:var(--bg3);padding:1px 7px;border-radius:6px;}
+  .ing-free{font-weight:400;color:var(--text3);font-size:11px;background:transparent;}
+  .meal-macros{display:flex;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);}
+  .mm{font-size:11px;color:var(--text3);}
+  .mm span{font-weight:600;font-size:12px;}
+  .day-summary{display:flex;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;}
+  .ds-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;}
+  .ds-val{font-size:1.1rem;font-weight:600;}
+  .ds-lbl{font-size:11px;color:var(--text3);}
+
+  /* TRAINING */
+  .training-week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:2rem;}
+  .tw-day{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1rem;text-align:center;cursor:pointer;transition:all .2s;}
+  .tw-day:hover{border-color:var(--border2);}
+  .tw-day.active{border-color:var(--accent);background:rgba(90,158,26,.08);}
+  .tw-day.rest{opacity:.5;}
+  .tw-dayname{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);}
+  .tw-type{font-size:13px;font-weight:600;margin-top:6px;}
+  .tw-icon{font-size:1.4rem;margin:6px 0;}
+  .workout-detail{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:2rem;display:none;}
+  .workout-detail.active{display:block;animation:fadeUp .3s ease;}
+  .wd-header{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+  .wd-icon{font-size:2.5rem;}
+  .wd-title{font-family:'DM Serif Display',serif;font-size:1.8rem;}
+  .wd-sub{color:var(--text2);font-size:13px;}
+  .exercise-table{width:100%;border-collapse:collapse;}
+  .exercise-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:8px 12px;border-bottom:1px solid var(--border);}
+  .exercise-table td{padding:12px;border-bottom:1px solid var(--border);font-size:13.5px;}
+  .exercise-table tr:last-child td{border-bottom:none;}
+  .exercise-table tr:hover td{background:var(--bg3);}
+  .ex-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--bg3);font-size:11px;font-weight:600;color:var(--text3);}
+  .ex-name{font-weight:500;color:var(--text);}
+  .ex-note{font-size:12px;color:var(--text3);margin-top:2px;}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:8px;font-weight:600;}
+  .badge-green{background:var(--green-dim);color:var(--green);}
+  .badge-amber{background:var(--amber-dim);color:var(--amber);}
+  .badge-blue{background:var(--blue-dim);color:var(--blue);}
+  .badge-coral{background:var(--coral-dim);color:var(--coral);}
+  .badge-teal{background:var(--teal-dim);color:var(--teal);}
+
+  /* TIPS */
+  .tips-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .tip-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1.5rem;}
+  .tip-icon{font-size:1.8rem;margin-bottom:10px;}
+  .tip-title{font-weight:600;font-size:14px;margin-bottom:6px;}
+  .tip-text{font-size:13px;color:var(--text2);line-height:1.6;}
+
+  /* TRACKER */
+  .tracker-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .tracker-week{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1.25rem;text-align:center;}
+  .tw-wnum{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+  .tw-kgval{font-size:1.4rem;font-weight:600;margin:4px 0;}
+  .tw-inp{width:100%;text-align:center;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:6px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;margin-top:8px;outline:none;}
+  .tw-inp:focus{border-color:var(--accent);}
+
+  footer{border-top:1px solid var(--border);padding:2rem;text-align:center;font-size:12px;color:var(--text3);}
+
+  @media(max-width:900px){
+    .hero{grid-template-columns:1fr;gap:2.5rem;}
+    .macro-overview{grid-template-columns:1fr;}
+    .macro-list{grid-template-columns:1fr 1fr;}
+    .meal-grid{grid-template-columns:1fr 1fr;}
+    .training-week{grid-template-columns:repeat(4,1fr);}
+    .tips-grid{grid-template-columns:1fr 1fr;}
+    .tracker-grid{grid-template-columns:1fr 1fr;}
+    .setup-grid{grid-template-columns:1fr;}
+    #setup-preview{grid-template-columns:1fr 1fr;}
+  }
+  @media(max-width:600px){
+    .meal-grid{grid-template-columns:1fr;}
+    .macro-list{grid-template-columns:1fr;}
+    .training-week{grid-template-columns:repeat(4,1fr);}
+    .tips-grid{grid-template-columns:1fr;}
+    nav{padding:0 1rem;}
+    .nav-link{padding:5px 10px;font-size:12px;}
+    .hero{padding:3rem 1.5rem 2rem;}
+    .section{padding:0 1.5rem 3rem;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════ SETUP OVERLAY ══════ -->
+<div id="setup-overlay">
+  <div class="setup-box">
+    <h1>Dein persönlicher Plan</h1>
+    <p>Trage deine Daten ein — Kalorien, Makros und Mahlzeiten werden automatisch berechnet und bei jeder Änderung aktualisiert.</p>
+    <div class="setup-grid">
+      <div class="setup-field">
+        <label>Gewicht (kg)</label>
+        <input type="number" id="inp-weight" min="40" max="300" step="0.5" placeholder="z.B. 90" oninput="updatePreview()">
+      </div>
+      <div class="setup-field">
+        <label>Größe (cm)</label>
+        <input type="number" id="inp-height" min="140" max="230" step="1" placeholder="z.B. 175" oninput="updatePreview()">
+      </div>
+      <div class="setup-field">
+        <label>Alter (Jahre)</label>
+        <input type="number" id="inp-age" min="15" max="90" step="1" placeholder="z.B. 30" oninput="updatePreview()">
+      </div>
+      <div class="setup-field">
+        <label>Geschlecht</label>
+        <select id="inp-gender" onchange="updatePreview()">
+          <option value="m">Männlich</option>
+          <option value="f">Weiblich</option>
+        </select>
+      </div>
+      <div class="setup-field" style="grid-column:1/-1">
+        <label>Aktivitätslevel</label>
+        <select id="inp-activity" onchange="updatePreview()">
+          <option value="1.2">Kaum aktiv (Bürojob, kein Sport)</option>
+          <option value="1.375" selected>Leicht aktiv (1–3× Sport/Woche)</option>
+          <option value="1.55">Mäßig aktiv (3–5× Sport/Woche)</option>
+          <option value="1.725">Sehr aktiv (6–7× intensiv)</option>
+          <option value="1.9">Extrem aktiv (körperliche Arbeit + Sport)</option>
+        </select>
+      </div>
+      <div class="setup-field" style="grid-column:1/-1">
+        <label>Kaloriendefizit (Ziel)</label>
+        <select id="inp-deficit" onchange="updatePreview()">
+          <option value="300">Sanft (−300 kcal · ~0,3 kg/Woche)</option>
+          <option value="500" selected>Standard (−500 kcal · ~0,5 kg/Woche)</option>
+          <option value="700">Aggressiv (−700 kcal · ~0,7 kg/Woche)</option>
+        </select>
+      </div>
+    </div>
+    <div class="setup-hint" id="setup-hint">Gib deine Daten ein um eine Vorschau zu sehen.</div>
+    <div id="setup-preview">
+      <div class="sp-card"><div class="sp-val" id="prev-kcal" style="color:var(--accent)">—</div><div class="sp-lbl">kcal/Tag</div></div>
+      <div class="sp-card"><div class="sp-val" id="prev-p" style="color:var(--green)">—</div><div class="sp-lbl">Protein</div></div>
+      <div class="sp-card"><div class="sp-val" id="prev-k" style="color:var(--amber)">—</div><div class="sp-lbl">Kohlenhydrate</div></div>
+      <div class="sp-card"><div class="sp-val" id="prev-f" style="color:var(--coral)">—</div><div class="sp-lbl">Fett</div></div>
+    </div>
+    <button class="btn-start" id="btn-start" onclick="startPlan()" disabled>Plan berechnen & starten →</button>
+  </div>
+</div>
+
+<button class="btn-edit" onclick="openSetup()">⚙ Daten anpassen</button>
+
+<!-- ══════ MAIN ══════ -->
+<nav>
+  <div class="nav-logo">Mein Plan</div>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="navTo('ernaehrung',this)">Ernährung</button>
+    <button class="nav-link" onclick="navTo('training',this)">Training</button>
+    <button class="nav-link" onclick="navTo('tipps',this)">Tipps</button>
+    <button class="nav-link" onclick="navTo('fortschritt',this)">Fortschritt</button>
+  </div>
+</nav>
+
+<div class="hero">
+  <div>
+    <div class="hero-title">Dein persönlicher<br><em>Abnehm-Plan</em></div>
+    <p class="hero-sub" id="hero-sub">Maßgeschneidert auf deine Werte. Ernährung + Training für nachhaltigen Fettabbau bei maximaler Muskelerhaltung.</p>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent)" id="s-kcal">—</div><div class="stat-lbl">kcal / Tag</div><div class="stat-sub" id="s-deficit">—</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--green)" id="s-bmi">—</div><div class="stat-lbl">BMI</div><div class="stat-sub" id="s-bmi-cat">—</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--amber)" id="s-rate">—</div><div class="stat-lbl">Pro Woche</div><div class="stat-sub">Realistisch & gesund</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--coral)" id="s-weeks">—</div><div class="stat-lbl">Wochen bis Ziel</div><div class="stat-sub" id="s-target">—</div></div>
+  </div>
+</div>
+
+<div class="macro-overview">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:1rem;">
+    <div class="ring-wrap">
+      <svg viewBox="0 0 180 180">
+        <circle cx="90" cy="90" r="70" fill="none" stroke="#eeece8" stroke-width="18"/>
+        <circle id="ring-p" cx="90" cy="90" r="70" fill="none" stroke="#4ade80" stroke-width="18" stroke-dasharray="0 440" stroke-linecap="round"/>
+        <circle id="ring-k" cx="90" cy="90" r="70" fill="none" stroke="#fbbf24" stroke-width="18" stroke-dasharray="0 440" stroke-linecap="round"/>
+        <circle id="ring-f" cx="90" cy="90" r="70" fill="none" stroke="#fb7185" stroke-width="18" stroke-dasharray="0 440" stroke-linecap="round"/>
+      </svg>
+      <div class="ring-center">
+        <div class="rc-val" id="ring-kcal">—</div>
+        <div class="rc-lbl">kcal</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);text-align:center;line-height:2;">
+      <span style="color:var(--green)">■</span> Protein &nbsp;
+      <span style="color:var(--amber)">■</span> Kohlenhydrate &nbsp;
+      <span style="color:var(--coral)">■</span> Fett
+    </div>
+  </div>
+  <div>
+    <div class="macro-list">
+      <div class="macro-item"><div class="mi-dot" style="background:var(--green)"></div><div class="mi-val" style="color:var(--green)" id="m-p">—</div><div class="mi-lbl">Protein</div><div class="mi-sub" id="m-p-sub">—</div></div>
+      <div class="macro-item"><div class="mi-dot" style="background:var(--amber)"></div><div class="mi-val" style="color:var(--amber)" id="m-k">—</div><div class="mi-lbl">Kohlenhydrate</div><div class="mi-sub" id="m-k-sub">—</div></div>
+      <div class="macro-item"><div class="mi-dot" style="background:var(--coral)"></div><div class="mi-val" style="color:var(--coral)" id="m-f">—</div><div class="mi-lbl">Fett</div><div class="mi-sub" id="m-f-sub">—</div></div>
+    </div>
+    <div style="margin-top:1.5rem;">
+      <div class="prog-bar-wrap">
+        <div class="prog-label-row"><span style="color:var(--green)" id="bar-p-lbl">Protein</span><span id="bar-p-pct">—</span></div>
+        <div class="prog-track"><div class="prog-fill" id="bar-p" style="background:var(--green);width:0%"></div></div>
+      </div>
+      <div class="prog-bar-wrap">
+        <div class="prog-label-row"><span style="color:var(--amber)" id="bar-k-lbl">Kohlenhydrate</span><span id="bar-k-pct">—</span></div>
+        <div class="prog-track"><div class="prog-fill" id="bar-k" style="background:var(--amber);width:0%"></div></div>
+      </div>
+      <div class="prog-bar-wrap">
+        <div class="prog-label-row"><span style="color:var(--coral)" id="bar-f-lbl">Fett</span><span id="bar-f-pct">—</span></div>
+        <div class="prog-track"><div class="prog-fill" id="bar-f" style="background:var(--coral);width:0%"></div></div>
+      </div>
+    </div>
+    <p style="margin-top:1rem;font-size:13px;color:var(--text3)" id="bmr-line">—</p>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section" id="ernaehrung">
+  <div class="section-label">Täglich angepasst an deine Makros</div>
+  <div class="section-title">Ernährungsplan</div>
+  <div class="day-tabs" id="dayTabs"></div>
+  <div id="dayContent"></div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section" id="training">
+  <div class="section-label">4× pro Woche</div>
+  <div class="section-title">Trainingsplan</div>
+  <div class="training-week" id="trainingWeek"></div>
+  <div id="workoutDetail"></div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section" id="tipps">
+  <div class="section-label">Wichtig</div>
+  <div class="section-title">Tipps & Regeln</div>
+  <div class="tips-grid">
+    <div class="tip-card"><div class="tip-icon">💧</div><div class="tip-title">Hydration</div><div class="tip-text">Täglich 2,5–3 Liter Wasser. Glas Wasser morgens nüchtern hilft beim Start. Kaffee & Tee zählen zur Hälfte.</div></div>
+    <div class="tip-card"><div class="tip-icon">🥚</div><div class="tip-title">Protein zuerst</div><div class="tip-text">Beginne jede Mahlzeit mit der Proteinquelle. Das erhöht die Sättigung und schützt Muskelmasse auch im Defizit.</div></div>
+    <div class="tip-card"><div class="tip-icon">⏰</div><div class="tip-title">Mahlzeiten-Timing</div><div class="tip-text">6 Mahlzeiten verhindern Heißhunger. Abends Magerquark = Casein für nächtliche Muskelregeneration.</div></div>
+    <div class="tip-card"><div class="tip-icon">📊</div><div class="tip-title">Wöchentlich messen</div><div class="tip-text">Immer morgens, nüchtern, nach der Toilette. Nicht täglich — Schwankungen sind normal. Der Trend zählt.</div></div>
+    <div class="tip-card"><div class="tip-icon">🍕</div><div class="tip-title">Cheat-Meal</div><div class="tip-text">1× pro Woche erlaubt, kein Cheat-Tag. Verhindert Heißhunger-Anfälle und hält den Stoffwechsel aktiv.</div></div>
+    <div class="tip-card"><div class="tip-icon">💤</div><div class="tip-title">Schlaf</div><div class="tip-text">7–9 Stunden sind entscheidend. Bei Schlafmangel steigt Cortisol — Fettabbau wird blockiert, Hunger nimmt zu.</div></div>
+    <div class="tip-card"><div class="tip-icon">🧂</div><div class="tip-title">Gewürze & Kräuter</div><div class="tip-text">Kurkuma, Zimt, Chili — kalorienarm und Geschmacksbooster. Machen Low-Calorie-Essen genießbar.</div></div>
+    <div class="tip-card"><div class="tip-icon">🏃</div><div class="tip-title">NEAT erhöhen</div><div class="tip-text">10.000 Schritte täglich verbrennen extra 300–500 kcal. Treppen statt Aufzug, zu Fuß statt Auto.</div></div>
+    <div class="tip-card"><div class="tip-icon">🔄</div><div class="tip-title">Anpassung nach 4 Wochen</div><div class="tip-text">Bei Stagnation: Kalorien um 100 reduzieren oder 1 Extra-Trainingseinheit. Nie mehr als −750 kcal Defizit.</div></div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section" id="fortschritt">
+  <div class="section-label">Dein Weg</div>
+  <div class="section-title">Fortschritt tracken</div>
+  <div class="tracker-grid" id="trackerGrid"></div>
+  <p style="margin-top:1rem;font-size:13px;color:var(--text3)">Trage dein wöchentliches Gewicht ein — wird lokal im Browser gespeichert und bleibt beim nächsten Öffnen erhalten.</p>
+</div>
+
+<footer>
+  <p id="footer-text">Dein persönlicher Abnehm-Plan · berechnet nach Mifflin-St. Jeor</p>
+  <p style="margin-top:4px">Alle Angaben sind Richtwerte. Bei gesundheitlichen Fragen bitte einen Arzt konsultieren.</p>
+</footer>
+
+<script>
+/* ════════════════════════════════
+   STATE
+════════════════════════════════ */
+let U = { weight:0, height:0, age:0, gender:'m', activity:1.375, deficit:500 };
+let M = { kcal:0, p:0, k:0, f:0, bmr:0, tdee:0 };
+let currentDay = 0;
+
+/* ════════════════════════════════
+   CALCULATION — Mifflin-St. Jeor
+════════════════════════════════ */
+function calcMacros(u) {
+  const bmr = u.gender === 'm'
+    ? 10*u.weight + 6.25*u.height - 5*u.age + 5
+    : 10*u.weight + 6.25*u.height - 5*u.age - 161;
+  const tdee = bmr * u.activity;
+  const kcal = Math.max(1200, Math.round(tdee - u.deficit));
+  const p    = Math.round(u.weight * 2);          // 2g per kg
+  const pKcal= p * 4;
+  const fKcal= Math.round(kcal * 0.25);
+  const f    = Math.round(fKcal / 9);
+  const kKcal= Math.max(0, kcal - pKcal - fKcal);
+  const k    = Math.round(kKcal / 4);
+  return { kcal, p, k, f, bmr: Math.round(bmr), tdee: Math.round(tdee) };
+}
+
+/* ════════════════════════════════
+   SETUP PREVIEW (live)
+════════════════════════════════ */
+function updatePreview() {
+  const w   = parseFloat(document.getElementById('inp-weight').value);
+  const h   = parseFloat(document.getElementById('inp-height').value);
+  const a   = parseFloat(document.getElementById('inp-age').value);
+  const g   = document.getElementById('inp-gender').value;
+  const act = parseFloat(document.getElementById('inp-activity').value);
+  const def = parseInt(document.getElementById('inp-deficit').value);
+
+  if (!w||!h||!a||w<40||h<140||a<15) {
+    document.getElementById('setup-hint').innerHTML = 'Gib alle Felder ein, um eine Vorschau zu sehen.';
+    document.getElementById('btn-start').disabled = true;
+    return;
+  }
+  const m   = calcMacros({weight:w,height:h,age:a,gender:g,activity:act,deficit:def});
+  const bmi = (w/((h/100)**2)).toFixed(1);
+  const rate= (def/7700).toFixed(2);
+
+  setText('prev-kcal', m.kcal);
+  setText('prev-p', m.p+'g');
+  setText('prev-k', m.k+'g');
+  setText('prev-f', m.f+'g');
+  document.getElementById('setup-hint').innerHTML =
+    `<strong>BMI ${bmi}</strong> &nbsp;·&nbsp; Grundumsatz <strong>${m.bmr} kcal</strong> &nbsp;·&nbsp; Gesamtumsatz <strong>${m.tdee} kcal</strong> &nbsp;·&nbsp; Abnehmen ca. <strong>${rate} kg/Woche</strong>`;
+  document.getElementById('btn-start').disabled = false;
+}
+
+/* ════════════════════════════════
+   START / OPEN SETUP
+════════════════════════════════ */
+function startPlan() {
+  U.weight   = parseFloat(document.getElementById('inp-weight').value);
+  U.height   = parseFloat(document.getElementById('inp-height').value);
+  U.age      = parseFloat(document.getElementById('inp-age').value);
+  U.gender   = document.getElementById('inp-gender').value;
+  U.activity = parseFloat(document.getElementById('inp-activity').value);
+  U.deficit  = parseInt(document.getElementById('inp-deficit').value);
+  localStorage.setItem('userProfile', JSON.stringify(U));
+  M = calcMacros(U);
+  applyToUI();
+  document.getElementById('setup-overlay').style.display = 'none';
+}
+
+function openSetup() {
+  document.getElementById('inp-weight').value  = U.weight||'';
+  document.getElementById('inp-height').value  = U.height||'';
+  document.getElementById('inp-age').value     = U.age||'';
+  document.getElementById('inp-gender').value  = U.gender;
+  document.getElementById('inp-activity').value= U.activity;
+  document.getElementById('inp-deficit').value = U.deficit;
+  updatePreview();
+  document.getElementById('setup-overlay').style.display = 'flex';
+}
+
+/* ════════════════════════════════
+   APPLY ALL UI
+════════════════════════════════ */
+function applyToUI() {
+  const bmi     = (U.weight / ((U.height/100)**2)).toFixed(1);
+  const bmiCat  = bmi<18.5?'Untergewicht':bmi<25?'Normalgewicht':bmi<30?'Übergewicht':'Adipositas';
+  const tgtW    = Math.round(24 * ((U.height/100)**2));
+  const diff    = Math.max(0, U.weight - tgtW);
+  const weeks   = diff>0 ? Math.round(diff/(U.deficit/7700)) : 0;
+  const rate    = (U.deficit/7700).toFixed(2);
+
+  // Hero
+  setText('s-kcal',   M.kcal);
+  setText('s-deficit',`−${U.deficit} kcal Defizit`);
+  setText('s-bmi',    bmi);
+  setText('s-bmi-cat',bmiCat+' → Ziel ~24');
+  setText('s-rate',   `−${rate} kg`);
+  setText('s-weeks',  weeks>0?`~${weeks}`:'—');
+  setText('s-target', diff>0?`−${diff} kg bis Normalgewicht`:'Ziel erreicht!');
+  setText('hero-sub', `${U.weight} kg · ${U.height} cm · BMI ${bmi}. Ernährung + Training für nachhaltigen Fettabbau.`);
+
+  // Ring (circumference ~440)
+  const C=440, pP=M.p*4/M.kcal, kP=M.k*4/M.kcal, fP=M.f*9/M.kcal;
+  const pL=Math.round(pP*C), kL=Math.round(kP*C), fL=Math.round(fP*C), g=4;
+  setRing('ring-p', pL, C, 0);
+  setRing('ring-k', kL, C, -(pL+g));
+  setRing('ring-f', fL, C, -(pL+kL+g*2));
+  setText('ring-kcal', M.kcal);
+
+  // Macro cards
+  const pp=Math.round(pP*100), kk=Math.round(kP*100), ff=Math.round(fP*100);
+  setText('m-p',     M.p+'g');   setText('m-p-sub', `${pp}% · ${M.p*4} kcal · 2g/kg`);
+  setText('m-k',     M.k+'g');   setText('m-k-sub', `${kk}% · ${M.k*4} kcal`);
+  setText('m-f',     M.f+'g');   setText('m-f-sub', `${ff}% · ${Math.round(M.f*9)} kcal`);
+
+  setText('bar-p-lbl',`Protein ${M.p}g`);   setText('bar-p-pct', pp+'%'); setWidth('bar-p', pp);
+  setText('bar-k-lbl',`Kohlenhydrate ${M.k}g`); setText('bar-k-pct', kk+'%'); setWidth('bar-k', kk);
+  setText('bar-f-lbl',`Fett ${M.f}g`);      setText('bar-f-pct', ff+'%'); setWidth('bar-f', ff);
+
+  setText('bmr-line', `Grundumsatz: ${M.bmr} kcal · Gesamtumsatz: ${M.tdee} kcal · Defizit: −${U.deficit} kcal`);
+  setText('footer-text', `${U.weight} kg · ${U.height} cm · ${M.kcal} kcal/Tag · Mifflin-St. Jeor`);
+
+  renderDay(currentDay);
+  buildTrackerGrid();
+}
+
+function setText(id, val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+function setWidth(id, pct){ const el=document.getElementById(id); if(el) el.style.width=Math.min(100,pct)+'%'; }
+function setRing(id, len, circ, offset){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.setAttribute('stroke-dasharray', `${Math.max(0,len-4)} ${circ-Math.max(0,len-4)}`);
+  el.setAttribute('stroke-dashoffset', offset);
+}
+
+/* ════════════════════════════════
+   MEAL TEMPLATES
+   Ratios: what fraction of daily P/K/F each meal gets
+════════════════════════════════ */
+// Each ingredient: { name, base (g at 2050 kcal reference), unit }
+// Grams scale linearly with user's actual kcal target via scaleF = M.kcal / 2050
+const dayTemplates = [
+  { name:"Montag", short:"Mo", meals:[
+    {slot:"Frühstück · 7:00",   title:"Griechischer Joghurt Bowl", pR:.22,kR:.28,fR:.16,
+     ing:[{n:"Griechischer Joghurt (0% Fett)",b:280},{n:"Haferflocken",b:50},{n:"Banane",b:100},{n:"Wheyprotein",b:25},{n:"Mandeln",b:12}]},
+    {slot:"Snack · 10:30",      title:"Hüttenkäse mit Paprika", pR:.13,kR:.06,fR:.07,
+     ing:[{n:"Hüttenkäse",b:200},{n:"Rote Paprika",b:150},{n:"Salz & Pfeffer",b:0}]},
+    {slot:"Mittagessen · 13:00",title:"Hähnchenbrust mit Quinoa & Brokkoli", pR:.26,kR:.27,fR:.23,
+     ing:[{n:"Hähnchenbrust",b:200},{n:"Quinoa (roh)",b:80},{n:"Brokkoli",b:200},{n:"Olivenöl",b:10},{n:"Gewürze",b:0}]},
+    {slot:"Snack · 16:00",      title:"Proteinshake + Apfel", pR:.12,kR:.14,fR:.04,
+     ing:[{n:"Wheyprotein",b:30},{n:"Wasser",b:300},{n:"Apfel",b:180}]},
+    {slot:"Abendessen · 19:00", title:"Lachs mit Süßkartoffeln & Salat", pR:.20,kR:.21,fR:.30,
+     ing:[{n:"Lachs",b:180},{n:"Süßkartoffel",b:200},{n:"Gemischter Salat",b:100},{n:"Olivenöl",b:10},{n:"Zitrone",b:30}]},
+    {slot:"Spätimbiss · 21:30", title:"Magerquark", pR:.10,kR:.04,fR:.02,
+     ing:[{n:"Magerquark",b:200},{n:"Zimt",b:0},{n:"Stevia",b:0}]}
+  ]},
+  { name:"Dienstag", short:"Di", meals:[
+    {slot:"Frühstück · 7:00",   title:"Ei-Omelett mit Gemüse", pR:.20,kR:.05,fR:.27,
+     ing:[{n:"Eier (ganz)",b:150},{n:"Eiweiß",b:60},{n:"Spinat",b:100},{n:"Champignons",b:80},{n:"Magerquark",b:50},{n:"Olivenöl",b:5}]},
+    {slot:"Snack · 10:30",      title:"Proteinshake + Walnüsse", pR:.13,kR:.04,fR:.18,
+     ing:[{n:"Wheyprotein",b:30},{n:"Wasser",b:300},{n:"Walnüsse",b:20}]},
+    {slot:"Mittagessen · 13:00",title:"Truthahnbolognese mit Linsennudeln", pR:.25,kR:.30,fR:.21,
+     ing:[{n:"Putenhack",b:180},{n:"Linsennudeln (roh)",b:90},{n:"Tomatensauce",b:150},{n:"Zwiebel",b:60},{n:"Knoblauch",b:10},{n:"Olivenöl",b:8}]},
+    {slot:"Snack · 16:00",      title:"Skyr mit Beeren", pR:.10,kR:.10,fR:.02,
+     ing:[{n:"Skyr",b:200},{n:"Gemischte Beeren",b:100}]},
+    {slot:"Abendessen · 19:00", title:"Puten-Pfanne mit braunem Reis", pR:.25,kR:.28,fR:.18,
+     ing:[{n:"Putenbrust",b:200},{n:"Brauner Reis (roh)",b:75},{n:"Zucchini",b:150},{n:"Paprika",b:100},{n:"Rapsöl",b:8}]},
+    {slot:"Spätimbiss · 21:30", title:"Magerquark mit Leinsamen", pR:.11,kR:.03,fR:.05,
+     ing:[{n:"Magerquark",b:200},{n:"Leinsamen",b:10},{n:"Zimt",b:0}]}
+  ]},
+  { name:"Mittwoch", short:"Mi", meals:[
+    {slot:"Frühstück · 7:00",   title:"Overnight Oats mit Protein", pR:.19,kR:.27,fR:.14,
+     ing:[{n:"Haferflocken",b:60},{n:"Mandelmilch",b:200},{n:"Wheyprotein",b:25},{n:"Beeren",b:100},{n:"Chiasamen",b:12}]},
+    {slot:"Snack · 10:30",      title:"Edamame & Karotten mit Hummus", pR:.06,kR:.11,fR:.10,
+     ing:[{n:"Edamame (gegart)",b:100},{n:"Karotten",b:150},{n:"Hummus",b:40}]},
+    {slot:"Mittagessen · 13:00",title:"Thunfisch-Bowl mit Vollkornreis", pR:.23,kR:.27,fR:.24,
+     ing:[{n:"Thunfisch (Dose, in Wasser)",b:160},{n:"Vollkornreis (roh)",b:75},{n:"Gurke",b:100},{n:"Avocado",b:60},{n:"Sojasoße",b:15}]},
+    {slot:"Snack · 16:00",      title:"Proteinshake + Reiskuchen", pR:.14,kR:.12,fR:.03,
+     ing:[{n:"Wheyprotein",b:30},{n:"Wasser",b:300},{n:"Reiskuchen",b:30},{n:"Magerquark",b:50}]},
+    {slot:"Abendessen · 19:00", title:"Hähnchenbrust mit Gemüsesuppe", pR:.24,kR:.22,fR:.18,
+     ing:[{n:"Hähnchenbrust",b:200},{n:"Karotten",b:100},{n:"Sellerie",b:80},{n:"Lauch",b:80},{n:"Vollkornbrot",b:60},{n:"Olivenöl",b:8}]},
+    {slot:"Spätimbiss · 21:30", title:"Skyr pur", pR:.12,kR:.06,fR:.02,
+     ing:[{n:"Skyr natur",b:250}]}
+  ]},
+  { name:"Donnerstag", short:"Do", meals:[
+    {slot:"Frühstück · 7:00",   title:"Proteinpfannkuchen", pR:.20,kR:.19,fR:.21,
+     ing:[{n:"Eier",b:150},{n:"Haferflocken",b:50},{n:"Magerquark",b:150},{n:"Kokosöl",b:8},{n:"Zimt",b:0}]},
+    {slot:"Snack · 10:30",      title:"Hüttenkäse mit Gurke", pR:.13,kR:.04,fR:.07,
+     ing:[{n:"Hüttenkäse",b:200},{n:"Gurke",b:200},{n:"Dill",b:0},{n:"Pfeffer",b:0}]},
+    {slot:"Mittagessen · 13:00",title:"Rindfleisch mit Kartoffeln & Bohnen", pR:.20,kR:.26,fR:.28,
+     ing:[{n:"Mageres Rindfleisch",b:150},{n:"Kartoffeln",b:200},{n:"Grüne Bohnen",b:200},{n:"Olivenöl",b:12}]},
+    {slot:"Snack · 16:00",      title:"Proteinshake + Mandeln", pR:.13,kR:.04,fR:.14,
+     ing:[{n:"Wheyprotein",b:30},{n:"Wasser",b:300},{n:"Mandeln",b:20}]},
+    {slot:"Abendessen · 19:00", title:"Lachs aus dem Ofen mit Gemüse", pR:.19,kR:.10,fR:.25,
+     ing:[{n:"Lachs",b:180},{n:"Zucchini",b:150},{n:"Paprika",b:100},{n:"Tomaten",b:100},{n:"Olivenöl",b:10},{n:"Dill & Zitrone",b:0}]},
+    {slot:"Spätimbiss · 21:30", title:"Magerquark mit Beeren", pR:.10,kR:.07,fR:.02,
+     ing:[{n:"Magerquark",b:200},{n:"Beeren",b:80}]}
+  ]},
+  { name:"Freitag", short:"Fr", meals:[
+    {slot:"Frühstück · 7:00",   title:"Rührei mit Vollkorntoast", pR:.19,kR:.18,fR:.24,
+     ing:[{n:"Eier",b:150},{n:"Eiweiß",b:60},{n:"Vollkornbrot",b:60},{n:"Tomaten",b:100},{n:"Olivenöl",b:8}]},
+    {slot:"Snack · 10:30",      title:"Skyr mit Apfel und Zimt", pR:.10,kR:.14,fR:.02,
+     ing:[{n:"Skyr",b:200},{n:"Apfel",b:180},{n:"Zimt",b:0}]},
+    {slot:"Mittagessen · 13:00",title:"Hähnchen-Kichererbsen-Curry", pR:.24,kR:.27,fR:.21,
+     ing:[{n:"Hähnchenbrust",b:180},{n:"Kichererbsen (Dose)",b:120},{n:"Kokosmilch light",b:100},{n:"Basmatireis (roh)",b:65},{n:"Currypulver",b:0}]},
+    {slot:"Snack · 16:00",      title:"Thunfisch auf Reiskuchen", pR:.12,kR:.10,fR:.05,
+     ing:[{n:"Thunfisch (Dose)",b:120},{n:"Reiskuchen",b:30},{n:"Senf",b:10}]},
+    {slot:"Abendessen · 19:00", title:"Putenschnitzel mit Ofengemüse", pR:.25,kR:.22,fR:.21,
+     ing:[{n:"Putenbrust",b:220},{n:"Dinkelbrot (Panade)",b:30},{n:"Ofengemüse mix",b:300},{n:"Rapsöl",b:8}]},
+    {slot:"Spätimbiss · 21:30", title:"Magerquark", pR:.10,kR:.04,fR:.02,
+     ing:[{n:"Magerquark",b:200},{n:"Stevia & Vanille",b:0}]}
+  ]},
+  { name:"Samstag", short:"Sa", meals:[
+    {slot:"Frühstück · 8:30",   title:"Großes Proteinfrühstück", pR:.25,kR:.17,fR:.30,
+     ing:[{n:"Eier",b:200},{n:"Räucherlachs",b:80},{n:"Vollkornbrot",b:60},{n:"Spinat",b:80},{n:"Tomate",b:100}]},
+    {slot:"Snack · 11:00",      title:"Joghurt mit Banane & Walnüssen", pR:.08,kR:.15,fR:.15,
+     ing:[{n:"Griechischer Joghurt",b:200},{n:"Banane",b:120},{n:"Walnüsse",b:15}]},
+    {slot:"Mittagessen · 14:00",title:"Gegrillter Wolfsbarsch mit Quinoa", pR:.25,kR:.26,fR:.24,
+     ing:[{n:"Wolfsbarsch",b:200},{n:"Quinoa (roh)",b:80},{n:"Salat (gemischt)",b:120},{n:"Olivenöl",b:10},{n:"Zitronensaft",b:20}]},
+    {slot:"Snack · 17:00",      title:"Proteinshake nach Sport", pR:.16,kR:.14,fR:.03,
+     ing:[{n:"Wheyprotein",b:40},{n:"Wasser",b:350},{n:"Banane",b:120}]},
+    {slot:"Abendessen · 19:30", title:"Rinderhack-Gemüse-Pfanne", pR:.20,kR:.26,fR:.21,
+     ing:[{n:"Mageres Rinderhack",b:150},{n:"Zucchini",b:150},{n:"Paprika",b:100},{n:"Vollkornnudeln (roh)",b:65},{n:"Tomatensauce",b:100},{n:"Rapsöl",b:8}]},
+    {slot:"Spätimbiss · 22:00", title:"Magerquark mit Beeren", pR:.10,kR:.05,fR:.02,
+     ing:[{n:"Magerquark",b:200},{n:"Beeren",b:80},{n:"Zimt",b:0}]}
+  ]},
+  { name:"Sonntag", short:"So", meals:[
+    {slot:"Frühstück · 9:00",   title:"Haferbrei mit Beeren & Protein", pR:.19,kR:.30,fR:.21,
+     ing:[{n:"Haferflocken",b:70},{n:"Hafermilch",b:250},{n:"Wheyprotein",b:25},{n:"Blaubeeren",b:100},{n:"Mandelmus",b:15}]},
+    {slot:"Snack · 12:00",      title:"Hüttenkäse mit Erdbeeren", pR:.12,kR:.08,fR:.07,
+     ing:[{n:"Hüttenkäse",b:200},{n:"Erdbeeren",b:150},{n:"Minze",b:0}]},
+    {slot:"Mittagessen · 14:30",title:"Sonntagsbraten Putenrollbraten", pR:.26,kR:.23,fR:.24,
+     ing:[{n:"Putenrollbraten",b:220},{n:"Ofengemüse",b:200},{n:"Kartoffeln",b:150},{n:"Olivenöl",b:10},{n:"Kräuter",b:0}]},
+    {slot:"Snack · 17:00",      title:"Skyr mit Mango", pR:.10,kR:.13,fR:.05,
+     ing:[{n:"Skyr",b:200},{n:"Mango",b:100},{n:"Kokosflocken",b:8}]},
+    {slot:"Abendessen · 19:30", title:"Gemüseomelette mit Feta", pR:.18,kR:.08,fR:.38,
+     ing:[{n:"Eier",b:200},{n:"Feta",b:40},{n:"Spinat",b:150},{n:"Tomaten",b:100},{n:"Paprika",b:100},{n:"Olivenöl",b:10}]},
+    {slot:"Spätimbiss · 22:00", title:"Magerquark", pR:.10,kR:.04,fR:.02,
+     ing:[{n:"Magerquark",b:200},{n:"Stevia & Vanille",b:0}]}
+  ]}
+];
+
+function buildTabs() {
+  const tabs = document.getElementById('dayTabs');
+  tabs.innerHTML = '';
+  dayTemplates.forEach((d,i) => {
+    const b = document.createElement('button');
+    b.className = 'day-tab'+(i===0?' active':'');
+    b.textContent = d.short;
+    b.onclick = () => showDay(i);
+    tabs.appendChild(b);
+  });
+}
+
+function showDay(i) {
+  currentDay = i;
+  document.querySelectorAll('.day-tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  renderDay(i);
+}
+
+function renderDay(i) {
+  if(!M.kcal) return;
+  const d = dayTemplates[i];
+  const scaleF = M.kcal / 2050; // scale factor relative to 2050 kcal baseline
+  const meals = d.meals.map(m => {
+    const p = Math.round(m.pR * M.p);
+    const k = Math.round(m.kR * M.k);
+    const f = Math.round(m.fR * M.f);
+    const scaledIng = m.ing.map(ig => ({
+      n: ig.n,
+      g: ig.b === 0 ? 0 : Math.round(ig.b * scaleF / 5) * 5  // round to nearest 5g
+    }));
+    return { ...m, p, k, f, kcal: Math.round(p*4+k*4+f*9), scaledIng };
+  });
+  const totKcal=meals.reduce((s,m)=>s+m.kcal,0);
+  const totP=meals.reduce((s,m)=>s+m.p,0);
+  const totK=meals.reduce((s,m)=>s+m.k,0);
+  const totF=meals.reduce((s,m)=>s+m.f,0);
+
+  let html = `<div class="day-summary">
+    <div class="ds-item"><div class="ds-val">${totKcal} kcal</div><div class="ds-lbl">Gesamt</div></div>
+    <div class="ds-item"><div class="ds-val" style="color:var(--green)">${totP}g</div><div class="ds-lbl">Protein</div></div>
+    <div class="ds-item"><div class="ds-val" style="color:var(--amber)">${totK}g</div><div class="ds-lbl">Kohlenhydrate</div></div>
+    <div class="ds-item"><div class="ds-val" style="color:var(--coral)">${totF}g</div><div class="ds-lbl">Fett</div></div>
+  </div><div class="meal-grid">`;
+  meals.forEach((m,mi)=>{
+    const ingRows = m.scaledIng.map(ig =>
+      ig.g > 0
+        ? `<div class="ing-row"><span class="ing-name">${ig.n}</span><span class="ing-gram">${ig.g}g</span></div>`
+        : `<div class="ing-row"><span class="ing-name">${ig.n}</span><span class="ing-gram ing-free">nach Geschmack</span></div>`
+    ).join('');
+    html+=`<div class="meal-card" style="animation-delay:${mi*0.05}s">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div class="meal-slot">${m.slot}</div>
+        <div class="meal-kcal-badge">${m.kcal} kcal</div>
+      </div>
+      <div class="meal-title">${m.title}</div>
+      <div class="ing-list">${ingRows}</div>
+      <div class="meal-macros">
+        <div class="mm">P <span style="color:var(--green)">${m.p}g</span></div>
+        <div class="mm">KH <span style="color:var(--amber)">${m.k}g</span></div>
+        <div class="mm">F <span style="color:var(--coral)">${m.f}g</span></div>
+      </div>
+    </div>`;
+  });
+  html+='</div>';
+  document.getElementById('dayContent').innerHTML=html;
+}
+
+/* ════════════════════════════════
+   TRAINING
+════════════════════════════════ */
+const workouts=[
+  {day:"Mo",name:"Oberkörper A",type:"Kraft",icon:"💪",badge:"badge-green",
+   desc:"Brust · Schultern · Trizeps · 60–70 Min",
+   exercises:[
+    {name:"Flachbank Kurzhantel-Drücken",sets:"4 × 10–12",rest:"90 Sek",note:"Kontrollierte Bewegung, kein Hohlrücken"},
+    {name:"Schrägbank Langhantel-Drücken",sets:"3 × 10",rest:"90 Sek",note:"30° Winkel, Brust dehnen am unteren Punkt"},
+    {name:"Schulterdrücken (Maschine)",sets:"3 × 12",rest:"75 Sek",note:"Ellenbogen leicht vor dem Körper"},
+    {name:"Seitheben mit Kurzhanteln",sets:"4 × 15",rest:"60 Sek",note:"Daumen leicht nach unten"},
+    {name:"Trizeps Pushdown (Kabel)",sets:"3 × 15",rest:"60 Sek",note:"Ellenbogen fixiert, volle Streckung"},
+    {name:"Trizeps French Press",sets:"3 × 12",rest:"60 Sek",note:"Langhantel, Ellenbogen eng"},
+    {name:"Kabel-Fliegende",sets:"3 × 15",rest:"60 Sek",note:"Finisher für Brust, leichtes Gewicht"}
+  ]},
+  {day:"Di",name:"Unterkörper A",type:"Kraft",icon:"🦵",badge:"badge-blue",
+   desc:"Quads · Gesäß · Waden · 65–75 Min",
+   exercises:[
+    {name:"Kniebeugen mit Langhantel",sets:"4 × 8–10",rest:"120 Sek",note:"Tiefe Kniebeuge, Rücken gerade"},
+    {name:"Beinpresse",sets:"4 × 12",rest:"90 Sek",note:"Füße schulterbreit, Knie nicht sperren"},
+    {name:"Rumänisches Kreuzheben",sets:"3 × 10",rest:"90 Sek",note:"Hüfte nach hinten, Rücken gerade"},
+    {name:"Beinstrecker (Maschine)",sets:"3 × 15",rest:"60 Sek",note:"Kontrolliert absenken"},
+    {name:"Beinbeuger (Maschine)",sets:"3 × 12",rest:"60 Sek",note:"Volle Bewegung"},
+    {name:"Wadenheben stehend",sets:"4 × 20",rest:"45 Sek",note:"Volle Dehnung am unteren Punkt"},
+    {name:"Ausfallschritte (Kurzhanteln)",sets:"3 × 10 je Seite",rest:"60 Sek",note:"Knie nicht über Zehen"}
+  ]},
+  {day:"Mi",name:"Ausdauer + Core",type:"Cardio",icon:"🏃",badge:"badge-amber",
+   desc:"HIIT · Core · 45–55 Min",
+   exercises:[
+    {name:"Aufwärmen Laufband / Fahrrad",sets:"10 Min",rest:"—",note:"Mittlere Intensität, Puls ~130 BPM"},
+    {name:"HIIT Intervalle",sets:"8 × 40 Sek on / 20 Sek off",rest:"2 Min nach Block",note:"Maximale Intensität bei Intervallen"},
+    {name:"Crunch (Kabel oder Boden)",sets:"4 × 20",rest:"45 Sek",note:"Bauch aktiv halten"},
+    {name:"Plank",sets:"3 × 45–60 Sek",rest:"45 Sek",note:"Hüfte gerade, Core unter Spannung"},
+    {name:"Russian Twist (mit Gewicht)",sets:"3 × 20 beidseitig",rest:"45 Sek",note:"Füße leicht anheben"},
+    {name:"Beinheben liegend",sets:"3 × 15",rest:"45 Sek",note:"Unterer Rücken auf Matte pressen"},
+    {name:"Seilspringen oder Radfahren",sets:"10 Min",rest:"—",note:"Cool-down, mäßiges Tempo"}
+  ]},
+  {day:"Do",name:"Oberkörper B",type:"Kraft",icon:"🏋️",badge:"badge-green",
+   desc:"Rücken · Bizeps · Rear Delt · 60–70 Min",
+   exercises:[
+    {name:"Klimmzüge oder Latzug",sets:"4 × 8–10",rest:"90 Sek",note:"Schulterblätter zusammenziehen"},
+    {name:"Langhantelrudern vorgebeugt",sets:"4 × 10",rest:"90 Sek",note:"Rücken parallel zum Boden"},
+    {name:"Seilrudern (Kabel)",sets:"3 × 12",rest:"75 Sek",note:"Ellenbogen eng, volle Streckung"},
+    {name:"Einarmiges Kurzhantelrudern",sets:"3 × 12 je Seite",rest:"60 Sek",note:"Volle Streckung unten"},
+    {name:"Bizeps-Curl mit Langhantel",sets:"4 × 12",rest:"60 Sek",note:"Langsam ablassen (3 Sek)"},
+    {name:"Hammercurl (Kurzhanteln)",sets:"3 × 12",rest:"60 Sek",note:"Neutral grip"},
+    {name:"Facepull (Kabel)",sets:"3 × 15",rest:"60 Sek",note:"Pflicht für Schultergesundheit"}
+  ]},
+  {day:"Fr",name:"Unterkörper B",type:"Kraft",icon:"🦵",badge:"badge-blue",
+   desc:"Gluteus · Hamstrings · Core · 60 Min",
+   exercises:[
+    {name:"Sumo-Kniebeuge",sets:"4 × 10",rest:"90 Sek",note:"Breiter Stand, Zehen 45° nach außen"},
+    {name:"Hip Thrust mit Langhantel",sets:"4 × 12",rest:"90 Sek",note:"Maximale Hüftstreckung oben"},
+    {name:"Kreuzheben Sumo",sets:"3 × 8",rest:"120 Sek",note:"Rücken gerade halten"},
+    {name:"Beinbeuger liegend",sets:"3 × 15",rest:"60 Sek",note:"Langsam ablassen"},
+    {name:"Abduktor-Maschine",sets:"3 × 20",rest:"45 Sek",note:"Mittlerer Gluteus"},
+    {name:"Step-ups mit Kurzhanteln",sets:"3 × 10 je Seite",rest:"60 Sek",note:"Knie nicht einwärts"},
+    {name:"Wadenheben sitzend",sets:"3 × 20",rest:"45 Sek",note:"Soleus"}
+  ]},
+  {day:"Sa",name:"Aktive Erholung",type:"Rest",icon:"🚶",badge:"badge-teal",
+   desc:"Leichte Aktivität · Optional 30–45 Min",
+   exercises:[
+    {name:"Spaziergang im Freien",sets:"30–45 Min",rest:"—",note:"Entspanntes Tempo, Natur genießen"},
+    {name:"Dehnübungen / Yoga",sets:"20 Min",rest:"—",note:"Hüftbeuger, Hamstrings, Brustöffnung"},
+    {name:"Mobilität-Routine",sets:"10–15 Min",rest:"—",note:"Schultern, Hüfte, Sprunggelenke"},
+    {name:"Leichtes Fahrradfahren (optional)",sets:"20 Min",rest:"—",note:"Sehr niedriger Widerstand"}
+  ]},
+  {day:"So",name:"Ruhetag",type:"Rest",icon:"😴",badge:"badge-coral",
+   desc:"Vollständige Erholung",
+   exercises:[
+    {name:"Kein Training",sets:"—",rest:"—",note:"Muskeln wachsen in der Erholung, nicht im Training"},
+    {name:"Ausreichend schlafen",sets:"7–9 Stunden",rest:"—",note:"Cortisol sinkt, Wachstumshormon steigt"},
+    {name:"Meal Prep (optional)",sets:"—",rest:"—",note:"Wochenvorbereitung hält den Plan sauber"}
+  ]}
+];
+
+function buildTrainingWeek(){
+  const wrap=document.getElementById('trainingWeek');
+  wrap.innerHTML='';
+  workouts.forEach((w,i)=>{
+    const d=document.createElement('div');
+    d.className='tw-day'+(w.type==='Rest'?' rest':'')+(i===0?' active':'');
+    d.innerHTML=`<div class="tw-dayname">${w.day}</div>
+      <div class="tw-icon">${w.icon}</div>
+      <div class="tw-type">${w.name}</div>
+      <div style="margin-top:4px"><span class="badge ${w.badge}">${w.type}</span></div>`;
+    d.onclick=()=>showWorkout(i);
+    wrap.appendChild(d);
+  });
+}
+
+function showWorkout(i){
+  document.querySelectorAll('.tw-day').forEach((d,j)=>d.classList.toggle('active',j===i));
+  const w=workouts[i];
+  const rows=w.exercises.map((e,ei)=>`<tr>
+    <td><span class="ex-num">${ei+1}</span></td>
+    <td><div class="ex-name">${e.name}</div><div class="ex-note">${e.note}</div></td>
+    <td style="white-space:nowrap;font-weight:600;color:var(--text)">${e.sets}</td>
+    <td style="color:var(--text2)">${e.rest}</td>
+  </tr>`).join('');
+  const det=document.getElementById('workoutDetail');
+  det.className='workout-detail active';
+  det.innerHTML=`<div class="wd-header">
+    <div class="wd-icon">${w.icon}</div>
+    <div><div class="wd-title">${w.name}</div><div class="wd-sub">${w.desc}</div></div>
+    <span class="badge ${w.badge}" style="margin-left:auto;font-size:13px;padding:6px 14px">${w.type}</span>
+  </div>
+  <table class="exercise-table">
+    <thead><tr><th>#</th><th>Übung</th><th>Sätze × Wdh.</th><th>Pause</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+/* ════════════════════════════════
+   TRACKER
+════════════════════════════════ */
+function buildTrackerGrid(){
+  const grid=document.getElementById('trackerGrid');
+  grid.innerHTML='';
+  const start=U.weight||100;
+  const rate=U.deficit/7700;
+  for(let w=1;w<=16;w++){
+    const saved=localStorage.getItem('week_'+w)||'';
+    const target=(start-(w-1)*rate).toFixed(1);
+    const card=document.createElement('div');
+    card.className='tracker-week';
+    let diffHtml='';
+    if(saved){
+      const diff=(parseFloat(saved)-start).toFixed(1);
+      const col=parseFloat(diff)<=0?'var(--green)':'var(--coral)';
+      diffHtml=`<div style="font-size:12px;color:${col};font-weight:600">${parseFloat(diff)<=0?diff:'+'+diff} kg</div>`;
+    } else {
+      diffHtml=`<div style="font-size:12px;color:var(--text3)">Ziel: ${target} kg</div>`;
+    }
+    card.innerHTML=`<div class="tw-wnum">Woche ${w}</div>
+      <div class="tw-kgval">${saved?saved+' kg':'—'}</div>
+      ${diffHtml}
+      <input class="tw-inp" type="number" step="0.1" placeholder="kg eintragen"
+        value="${saved}" oninput="saveWeight(${w},this.value)">`;
+    grid.appendChild(card);
+  }
+}
+
+function saveWeight(week,val){
+  if(val) localStorage.setItem('week_'+week, parseFloat(val).toFixed(1));
+  else localStorage.removeItem('week_'+week);
+  buildTrackerGrid();
+}
+
+/* ════════════════════════════════
+   NAV
+════════════════════════════════ */
+function navTo(id, el){
+  document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ════════════════════════════════
+   INIT
+════════════════════════════════ */
+buildTabs();
+buildTrainingWeek();
+showWorkout(0);
+
+// Restore saved profile
+try {
+  const saved = localStorage.getItem('userProfile');
+  if(saved){
+    U = JSON.parse(saved);
+    M = calcMacros(U);
+    applyToUI();
+    document.getElementById('setup-overlay').style.display='none';
+  }
+} catch(e){}
+</script>
+</body>
+</html>
